@@ -17,6 +17,7 @@ export const UserLocalSettingsCtx = createContext<
   showNotes: false,
   showTags: true,
   showTitle: true,
+  bookmarkShowAiSummary: false,
   imageFit: "cover",
 });
 
@@ -47,6 +48,11 @@ export function useInterfaceLang() {
 export function useGridColumns() {
   const settings = useUserLocalSettings();
   return settings.gridColumns;
+}
+
+export function useBookmarkShowAiSummary() {
+  const settings = useUserLocalSettings();
+  return settings.bookmarkShowAiSummary;
 }
 
 export function bookmarkLayoutSwitch<T>(
