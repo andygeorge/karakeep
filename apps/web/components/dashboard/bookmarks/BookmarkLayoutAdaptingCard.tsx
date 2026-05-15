@@ -2,7 +2,7 @@
 
 import type { BookmarksLayoutTypes } from "@/lib/userLocalSettings/types";
 import type { MouseEvent, ReactNode } from "react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import {
   bookmarkLayoutSwitch,
   useBookmarkDisplaySettings,
   useBookmarkLayout,
+  useBookmarkShowAiSummary,
 } from "@/lib/userLocalSettings/bookmarksLayout";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +39,8 @@ import {
 } from "@karakeep/shared/utils/bookmarkUtils";
 import { switchCase } from "@karakeep/shared/utils/switch";
 
+import AiSummaryInline from "./AiSummaryInline";
+import AiSummarySlot from "./AiSummarySlot";
 import BookmarkActionBar from "./BookmarkActionBar";
 import BookmarkFormattedCreatedAt from "./BookmarkFormattedCreatedAt";
 import BookmarkOwnerIcon from "./BookmarkOwnerIcon";
@@ -337,19 +340,26 @@ function ListView({
 }: Props) {
   const { showNotes, showTags, showTitle, imageFit } =
     useBookmarkDisplaySettings();
+  const showAiSummary = useBookmarkShowAiSummary();
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
   const imgFitClass = switchCase(imageFit, {
     cover: "object-cover",
     contain: "object-contain",
   });
   const note = showNotes ? bookmark.note?.trim() : undefined;
   const cardHandlers = useCardClickToPreview(bookmark.id);
+  const shouldShowInlineSummary =
+    showAiSummary &&
+    bookmark.content.type === BookmarkTypes.LINK &&
+    !!bookmark.summary;
 
   return (
     // Mouse-only affordance; keyboard users navigate via the title link, date link, and preview button.
     /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
     <div
       className={cn(
-        "group relative flex max-h-96 cursor-pointer gap-4 overflow-hidden rounded-lg p-2",
+        "group relative flex cursor-pointer gap-4 overflow-hidden rounded-lg p-2",
+        shouldShowInlineSummary && summaryExpanded ? undefined : "max-h-96",
         className,
       )}
       data-bookmark-index={bookmarkIndex}
@@ -375,6 +385,14 @@ function ListView({
           )}
           {content && <div className="shrink-1 overflow-hidden">{content}</div>}
           {note && <NotePreview note={note} bookmarkId={bookmark.id} />}
+          {shouldShowInlineSummary && (
+            <AiSummaryInline
+              bookmark={bookmark}
+              expanded={summaryExpanded}
+              onToggle={() => setSummaryExpanded((v) => !v)}
+              clampLines={2}
+            />
+          )}
           {showTags && (
             <div className="flex shrink-0 flex-wrap gap-1 overflow-hidden">
               <TagList
@@ -404,6 +422,7 @@ function GridView({
 }: Props & { layout: BookmarksLayoutTypes }) {
   const { showNotes, showTags, showTitle, imageFit } =
     useBookmarkDisplaySettings();
+  const showAiSummary = useBookmarkShowAiSummary();
   const imgFitClass = switchCase(imageFit, {
     cover: "object-cover",
     contain: "object-contain",
@@ -413,7 +432,17 @@ function GridView({
     "grid",
     cn("h-56 min-h-56 w-full rounded-t-lg", imgFitClass),
   );
+  const swapToAiSummary =
+    showAiSummary && bookmark.content.type === BookmarkTypes.LINK;
   const cardHandlers = useCardClickToPreview(bookmark.id);
+
+  const topSlot = swapToAiSummary ? (
+    <div className="h-56 w-full shrink-0 overflow-hidden rounded-t-lg">
+      <AiSummarySlot bookmark={bookmark} fallbackImage={img} />
+    </div>
+  ) : img ? (
+    <div className="h-56 w-full shrink-0 overflow-hidden">{img}</div>
+  ) : null;
 
   return (
     /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
@@ -431,7 +460,7 @@ function GridView({
       <OwnerIndicator bookmark={bookmark} />
       <DragHandle bookmark={bookmark} className="left-2 top-2" />
       <HoverActionBar bookmark={bookmark} />
-      {img && <div className="h-56 w-full shrink-0 overflow-hidden">{img}</div>}
+      {topSlot}
       <div className="flex h-full flex-col justify-between gap-2 overflow-hidden p-2">
         <div className="grow-1 flex flex-col gap-2 overflow-hidden">
           {showTitle && title && (
@@ -465,14 +494,21 @@ function CompactView({
   bookmarkIndex,
 }: Props) {
   const { showTitle } = useBookmarkDisplaySettings();
+  const showAiSummary = useBookmarkShowAiSummary();
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
   const cardHandlers = useCardClickToPreview(bookmark.id);
+  const shouldShowInlineSummary =
+    showAiSummary &&
+    bookmark.content.type === BookmarkTypes.LINK &&
+    !!bookmark.summary;
+
   return (
     /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
     <div
       className={cn(
         "group relative flex cursor-pointer flex-col overflow-hidden rounded-lg",
         className,
-        "max-h-96",
+        shouldShowInlineSummary && summaryExpanded ? undefined : "max-h-96",
       )}
       data-bookmark-index={bookmarkIndex}
       onClick={cardHandlers.onClick}
@@ -480,43 +516,53 @@ function CompactView({
     >
       <MultiBookmarkSelector bookmark={bookmark} />
       <OwnerIndicator bookmark={bookmark} />
-      <div className="flex h-full justify-between gap-2 overflow-hidden p-2">
-        <div className="flex items-center gap-2">
-          {bookmark.content.type === BookmarkTypes.LINK &&
-            bookmark.content.favicon && (
-              <Image
-                src={bookmark.content.favicon}
-                alt="favicon"
-                width={5}
-                unoptimized
-                height={5}
-                className="size-5"
-              />
+      <div className="flex h-full flex-col gap-1 overflow-hidden p-2">
+        <div className="flex justify-between gap-2 overflow-hidden">
+          <div className="flex items-center gap-2 overflow-hidden">
+            {bookmark.content.type === BookmarkTypes.LINK &&
+              bookmark.content.favicon && (
+                <Image
+                  src={bookmark.content.favicon}
+                  alt="favicon"
+                  width={5}
+                  unoptimized
+                  height={5}
+                  className="size-5"
+                />
+              )}
+            {bookmark.content.type === BookmarkTypes.TEXT && (
+              <NotebookPen className="size-5" />
             )}
-          {bookmark.content.type === BookmarkTypes.TEXT && (
-            <NotebookPen className="size-5" />
-          )}
-          {bookmark.content.type === BookmarkTypes.ASSET && (
-            <ImageIcon className="size-5" />
-          )}
-          {showTitle && (
-            <div className="shrink-1 text-md line-clamp-1 overflow-hidden text-ellipsis break-words">
-              {title ?? "Untitled"}
-            </div>
-          )}
-          {footer && (
-            <p className="flex shrink-0 gap-2 text-gray-500">•{footer}</p>
-          )}
-          <p className="text-gray-500">•</p>
-          <Link
-            href={`/dashboard/preview/${bookmark.id}`}
-            suppressHydrationWarning
-            className="shrink-0 gap-2 text-gray-500"
-          >
-            <BookmarkFormattedCreatedAt createdAt={bookmark.createdAt} />
-          </Link>
+            {bookmark.content.type === BookmarkTypes.ASSET && (
+              <ImageIcon className="size-5" />
+            )}
+            {showTitle && (
+              <div className="shrink-1 text-md line-clamp-1 overflow-hidden text-ellipsis break-words">
+                {title ?? "Untitled"}
+              </div>
+            )}
+            {footer && (
+              <p className="flex shrink-0 gap-2 text-gray-500">•{footer}</p>
+            )}
+            <p className="text-gray-500">•</p>
+            <Link
+              href={`/dashboard/preview/${bookmark.id}`}
+              suppressHydrationWarning
+              className="shrink-0 gap-2 text-gray-500"
+            >
+              <BookmarkFormattedCreatedAt createdAt={bookmark.createdAt} />
+            </Link>
+          </div>
+          <BookmarkActionBar bookmark={bookmark} />
         </div>
-        <BookmarkActionBar bookmark={bookmark} />
+        {shouldShowInlineSummary && (
+          <AiSummaryInline
+            bookmark={bookmark}
+            expanded={summaryExpanded}
+            onToggle={() => setSummaryExpanded((v) => !v)}
+            clampLines={1}
+          />
+        )}
       </div>
     </div>
   );

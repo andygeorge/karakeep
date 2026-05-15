@@ -58,3 +58,9 @@ export async function updateShowTitle(showTitle: boolean) {
 export async function updateImageFit(imageFit: "cover" | "contain") {
   await readModifyWrite(() => ({ imageFit }));
 }
+
+export async function updateBookmarkShowAiSummary(
+  bookmarkShowAiSummary: boolean,
+) {
+  await readModifyWrite(() => ({ bookmarkShowAiSummary }));
+}

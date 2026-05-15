@@ -22,9 +22,11 @@ import { useTranslation } from "@/lib/i18n/client";
 import {
   useBookmarkDisplaySettings,
   useBookmarkLayout,
+  useBookmarkShowAiSummary,
   useGridColumns,
 } from "@/lib/userLocalSettings/bookmarksLayout";
 import {
+  updateBookmarkShowAiSummary,
   updateBookmarksLayout,
   updateGridColumns,
   updateImageFit,
@@ -43,6 +45,7 @@ import {
   LucideIcon,
   NotepadText,
   Settings,
+  Sparkles,
   Tag,
 } from "lucide-react";
 
@@ -60,6 +63,7 @@ export default function ViewOptions() {
   const layout = useBookmarkLayout();
   const gridColumns = useGridColumns();
   const actualDisplaySettings = useBookmarkDisplaySettings();
+  const actualShowAiSummary = useBookmarkShowAiSummary();
   const [tempColumns, setTempColumns] = useState(gridColumns);
   const [, startTransition] = useTransition();
 
@@ -72,6 +76,9 @@ export default function ViewOptions() {
   const [optimisticImageFit, setOptimisticImageFit] = useOptimistic(
     actualDisplaySettings.imageFit,
   );
+
+  const [optimisticShowAiSummary, setOptimisticShowAiSummary] =
+    useOptimistic(actualShowAiSummary);
 
   const showColumnSlider =
     optimisticLayout === "grid" || optimisticLayout === "masonry";
@@ -123,6 +130,13 @@ export default function ViewOptions() {
     startTransition(async () => {
       setOptimisticImageFit(fit);
       await updateImageFit(fit);
+    });
+  };
+
+  const handleShowAiSummaryChange = (checked: boolean) => {
+    startTransition(async () => {
+      setOptimisticShowAiSummary(checked);
+      await updateBookmarkShowAiSummary(checked);
     });
   };
 
@@ -235,6 +249,21 @@ export default function ViewOptions() {
               id="show-title"
               checked={optimisticDisplaySettings.showTitle}
               onCheckedChange={handleShowTitleChange}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="show-ai-summary"
+              className="flex cursor-pointer items-center gap-2 text-sm"
+            >
+              <Sparkles size={16} />
+              <span>{t("view_options.show_ai_summary")}</span>
+            </Label>
+            <Switch
+              id="show-ai-summary"
+              checked={optimisticShowAiSummary}
+              onCheckedChange={handleShowAiSummaryChange}
             />
           </div>
         </div>
