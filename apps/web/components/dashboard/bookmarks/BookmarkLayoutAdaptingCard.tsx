@@ -1,10 +1,11 @@
 "use client";
 
 import type { BookmarksLayoutTypes } from "@/lib/userLocalSettings/types";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
 import { BOOKMARK_DRAG_MIME } from "@/lib/bookmark-drag";
 import useBulkActionsStore from "@/lib/bulkActions";
@@ -55,6 +56,48 @@ interface Props {
   fitHeight?: boolean;
   wrapTags: boolean;
   bookmarkIndex?: number;
+}
+
+function useCardClickToPreview(bookmarkId: string) {
+  const router = useRouter();
+  const href = `/dashboard/preview/${bookmarkId}`;
+
+  const shouldIgnore = (e: MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('a, button, [data-no-card-click], [role="menuitem"]')) {
+      return true;
+    }
+    // Don't hijack text selection
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return true;
+    }
+    return false;
+  };
+
+  const onClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (shouldIgnore(e)) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey) {
+        window.open(href, "_blank", "noreferrer");
+        return;
+      }
+      router.push(href);
+    },
+    [router, href],
+  );
+
+  const onAuxClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (e.button !== 1) return;
+      if (shouldIgnore(e)) return;
+      e.preventDefault();
+      window.open(href, "_blank", "noreferrer");
+    },
+    [href],
+  );
+
+  return { onClick, onAuxClick };
 }
 
 function BottomRow({
@@ -193,6 +236,7 @@ function DragHandle({
     <div
       draggable
       onDragStart={handleDragStart}
+      data-no-card-click
       className={cn(
         "absolute z-40 hidden cursor-grab rounded bg-background/70 p-0.5 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 [@media(pointer:fine)]:block",
         className,
@@ -323,14 +367,19 @@ function ListView({
     contain: "object-contain",
   });
   const note = showNotes ? bookmark.note?.trim() : undefined;
+  const cardHandlers = useCardClickToPreview(bookmark.id);
 
   return (
+    // Mouse-only affordance; keyboard users navigate via the title link, date link, and preview button.
+    /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
     <div
       className={cn(
-        "group relative flex max-h-96 gap-4 overflow-hidden rounded-lg p-2",
+        "group relative flex max-h-96 cursor-pointer gap-4 overflow-hidden rounded-lg p-2",
         className,
       )}
       data-bookmark-index={bookmarkIndex}
+      onClick={cardHandlers.onClick}
+      onAuxClick={cardHandlers.onAuxClick}
     >
       <BulkEditSelectionOverlay bookmark={bookmark} />
       <OwnerIndicator bookmark={bookmark} />
@@ -389,15 +438,19 @@ function GridView({
     "grid",
     cn("h-56 min-h-56 w-full rounded-t-lg", imgFitClass),
   );
+  const cardHandlers = useCardClickToPreview(bookmark.id);
 
   return (
+    /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
     <div
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg",
+        "group relative flex cursor-pointer flex-col overflow-hidden rounded-lg",
         className,
         fitHeight && layout != "grid" ? "max-h-96" : "h-96",
       )}
       data-bookmark-index={bookmarkIndex}
+      onClick={cardHandlers.onClick}
+      onAuxClick={cardHandlers.onAuxClick}
     >
       <BulkEditSelectionOverlay bookmark={bookmark} />
       <OwnerIndicator bookmark={bookmark} />
@@ -440,14 +493,18 @@ function CompactView({
   const isBulkEditEnabled = useBulkActionsStore(
     (state) => state.isBulkEditEnabled,
   );
+  const cardHandlers = useCardClickToPreview(bookmark.id);
   return (
+    /* oxlint-disable-next-line click-events-have-key-events, no-static-element-interactions */
     <div
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg",
+        "group relative flex cursor-pointer flex-col overflow-hidden rounded-lg",
         className,
         "max-h-96",
       )}
       data-bookmark-index={bookmarkIndex}
+      onClick={cardHandlers.onClick}
+      onAuxClick={cardHandlers.onAuxClick}
     >
       <BulkEditSelectionOverlay bookmark={bookmark} />
       <OwnerIndicator bookmark={bookmark} />

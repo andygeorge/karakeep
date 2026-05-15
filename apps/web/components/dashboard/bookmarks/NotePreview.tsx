@@ -30,6 +30,7 @@ export function NotePreview({ note, bookmarkId, className }: NotePreviewProps) {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <div
+          data-no-card-click
           className={cn(
             "flex cursor-pointer items-center gap-1.5 text-sm font-light italic text-gray-500 dark:text-gray-400",
             className,
