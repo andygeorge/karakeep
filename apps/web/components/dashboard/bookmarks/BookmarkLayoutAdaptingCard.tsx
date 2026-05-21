@@ -286,74 +286,97 @@ function HoverActionBar({
   if (!isOwner) return null;
 
   return (
-    <div
-      className={cn(
-        "z-[60] gap-1 rounded bg-white/50 p-1 backdrop-blur-sm transition-opacity duration-200 dark:bg-black/50",
-        inline ? "shrink-0" : "absolute right-2 top-2",
-        isBulkEditEnabled
-          ? "pointer-events-auto flex opacity-100"
-          : "pointer-events-none hidden opacity-0 group-hover:opacity-100 [@media(pointer:fine)]:pointer-events-auto [@media(pointer:fine)]:flex",
-      )}
-    >
-      <button
-        aria-label={t("actions.bulk_edit")}
-        title={t("actions.bulk_edit")}
-        className="rounded p-0.5 hover:bg-background/50"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (isBulkEditEnabled) {
-            toggleBookmark(bookmark.id);
-          } else {
-            enableBulkEditForBookmark(bookmark.id);
-          }
-        }}
-      >
-        {isSelected ? (
-          <CircleCheck className="size-4" />
-        ) : (
-          <Circle className="size-4" />
+    <>
+      <DeleteBookmarkConfirmationDialog
+        bookmark={bookmark}
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+      />
+      <div
+        className={cn(
+          "z-[60] gap-1 rounded bg-white/50 p-1 backdrop-blur-sm transition-opacity duration-200 dark:bg-black/50",
+          inline ? "shrink-0" : "absolute right-2 top-2",
+          isBulkEditEnabled
+            ? "pointer-events-auto flex opacity-100"
+            : "pointer-events-none hidden opacity-0 group-hover:opacity-100 [@media(pointer:fine)]:pointer-events-auto [@media(pointer:fine)]:flex",
         )}
-      </button>
-      {!demoMode && (
-        <>
-          <button
-            title={
-              bookmark.favourited
-                ? t("actions.unfavorite")
-                : t("actions.favorite")
+      >
+        <button
+          aria-label={t("actions.bulk_edit")}
+          title={t("actions.bulk_edit")}
+          className="rounded p-0.5 hover:bg-background/50"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isBulkEditEnabled) {
+              toggleBookmark(bookmark.id);
+            } else {
+              enableBulkEditForBookmark(bookmark.id);
             }
-            className="rounded p-0.5 hover:bg-background/50"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              updateBookmarkMutator.mutate({
-                bookmarkId: bookmark.id,
-                favourited: !bookmark.favourited,
-              });
-            }}
-          >
-            <FavouritedActionIcon favourited={bookmark.favourited} size={16} />
-          </button>
-          <button
-            title={
-              bookmark.archived ? t("actions.unarchive") : t("actions.archive")
-            }
-            className="rounded p-0.5 hover:bg-background/50"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              updateBookmarkMutator.mutate({
-                bookmarkId: bookmark.id,
-                archived: !bookmark.archived,
-              });
-            }}
-          >
-            <ArchivedActionIcon archived={bookmark.archived} size={16} />
-          </button>
-        </>
-      )}
-    </div>
+          }}
+        >
+          {isSelected ? (
+            <CircleCheck className="size-4" />
+          ) : (
+            <Circle className="size-4" />
+          )}
+        </button>
+        {!demoMode && (
+          <>
+            <button
+              title={
+                bookmark.favourited
+                  ? t("actions.unfavorite")
+                  : t("actions.favorite")
+              }
+              className="rounded p-0.5 hover:bg-background/50"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBookmarkMutator.mutate({
+                  bookmarkId: bookmark.id,
+                  favourited: !bookmark.favourited,
+                });
+              }}
+            >
+              <FavouritedActionIcon
+                favourited={bookmark.favourited}
+                size={16}
+              />
+            </button>
+            <button
+              title={
+                bookmark.archived
+                  ? t("actions.unarchive")
+                  : t("actions.archive")
+              }
+              className="rounded p-0.5 hover:bg-background/50"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBookmarkMutator.mutate({
+                  bookmarkId: bookmark.id,
+                  archived: !bookmark.archived,
+                });
+              }}
+            >
+              <ArchivedActionIcon archived={bookmark.archived} size={16} />
+            </button>
+            <button
+              title={t("actions.delete")}
+              className="rounded p-0.5 text-destructive hover:bg-background/50"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
