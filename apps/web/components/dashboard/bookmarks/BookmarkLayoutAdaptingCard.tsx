@@ -24,6 +24,7 @@ import {
   GripVertical,
   Image as ImageIcon,
   NotebookPen,
+  Trash2,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ import AiSummarySlot from "./AiSummarySlot";
 import BookmarkActionBar from "./BookmarkActionBar";
 import BookmarkFormattedCreatedAt from "./BookmarkFormattedCreatedAt";
 import BookmarkOwnerIcon from "./BookmarkOwnerIcon";
+import DeleteBookmarkConfirmationDialog from "./DeleteBookmarkConfirmationDialog";
 import { ArchivedActionIcon, FavouritedActionIcon } from "./icons";
 import { NotePreview } from "./NotePreview";
 import TagList from "./TagList";
@@ -279,6 +281,7 @@ function HoverActionBar({ bookmark }: { bookmark: ZBookmark }) {
   const { isBulkEditEnabled } = useBulkActionsStore();
   const { data: session } = useSession();
   const demoMode = !!useClientConfig().demoMode;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const updateBookmarkMutator = useUpdateBookmark({
     onSuccess: () => {
       toast.success(t("toasts.bookmarks.updated"));
@@ -292,40 +295,60 @@ function HoverActionBar({ bookmark }: { bookmark: ZBookmark }) {
   if (!isOwner || isBulkEditEnabled || demoMode) return null;
 
   return (
-    <div className="pointer-events-none absolute right-2 top-2 z-30 hidden gap-1 rounded bg-white/50 p-1 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 dark:bg-black/50 [@media(pointer:fine)]:pointer-events-auto [@media(pointer:fine)]:flex">
-      <button
-        title={
-          bookmark.favourited ? t("actions.unfavorite") : t("actions.favorite")
-        }
-        className="rounded p-0.5 hover:bg-background/50"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          updateBookmarkMutator.mutate({
-            bookmarkId: bookmark.id,
-            favourited: !bookmark.favourited,
-          });
-        }}
-      >
-        <FavouritedActionIcon favourited={bookmark.favourited} size={16} />
-      </button>
-      <button
-        title={
-          bookmark.archived ? t("actions.unarchive") : t("actions.archive")
-        }
-        className="rounded p-0.5 hover:bg-background/50"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          updateBookmarkMutator.mutate({
-            bookmarkId: bookmark.id,
-            archived: !bookmark.archived,
-          });
-        }}
-      >
-        <ArchivedActionIcon archived={bookmark.archived} size={16} />
-      </button>
-    </div>
+    <>
+      <DeleteBookmarkConfirmationDialog
+        bookmark={bookmark}
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+      />
+      <div className="pointer-events-none absolute right-2 top-2 z-30 hidden gap-1 rounded bg-white/50 p-1 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 dark:bg-black/50 [@media(pointer:fine)]:pointer-events-auto [@media(pointer:fine)]:flex">
+        <button
+          title={
+            bookmark.favourited
+              ? t("actions.unfavorite")
+              : t("actions.favorite")
+          }
+          className="rounded p-0.5 hover:bg-background/50"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateBookmarkMutator.mutate({
+              bookmarkId: bookmark.id,
+              favourited: !bookmark.favourited,
+            });
+          }}
+        >
+          <FavouritedActionIcon favourited={bookmark.favourited} size={16} />
+        </button>
+        <button
+          title={
+            bookmark.archived ? t("actions.unarchive") : t("actions.archive")
+          }
+          className="rounded p-0.5 hover:bg-background/50"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateBookmarkMutator.mutate({
+              bookmarkId: bookmark.id,
+              archived: !bookmark.archived,
+            });
+          }}
+        >
+          <ArchivedActionIcon archived={bookmark.archived} size={16} />
+        </button>
+        <button
+          title={t("actions.delete")}
+          className="rounded p-0.5 text-destructive hover:bg-background/50"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDeleteDialogOpen(true);
+          }}
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </>
   );
 }
 
