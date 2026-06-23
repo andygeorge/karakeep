@@ -50,9 +50,13 @@ export default function EditorCard({ className }: { className?: string }) {
   });
   const { ref, ...textFieldProps } = form.register("text");
   useImperativeHandle(ref, () => inputRef.current);
-  useHotkeys("mod+e", () => {
-    inputRef.current?.focus();
-  });
+  useHotkeys(
+    "mod+e",
+    () => {
+      inputRef.current?.focus();
+    },
+    { preventDefault: true, enableOnFormTags: true },
+  );
 
   const { mutate, isPending } = useCreateBookmarkWithPostHook({
     onSuccess: (resp) => {
